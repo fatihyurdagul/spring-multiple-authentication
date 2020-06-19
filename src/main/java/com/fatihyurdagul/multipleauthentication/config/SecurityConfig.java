@@ -1,8 +1,10 @@
 package com.fatihyurdagul.multipleauthentication.config;
 
 import com.fatihyurdagul.multipleauthentication.security.filter.CustomAuthenticationFilter;
+import com.fatihyurdagul.multipleauthentication.security.filter.TokenAuthenticationFilter;
 import com.fatihyurdagul.multipleauthentication.security.providers.OtpAuthenticationProvider;
 import com.fatihyurdagul.multipleauthentication.security.providers.PasswordAuthenticationProvider;
+import com.fatihyurdagul.multipleauthentication.security.providers.TokenAuthenticationProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,7 +18,10 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 		@Autowired
-		CustomAuthenticationFilter filter;
+		CustomAuthenticationFilter loginFilter;
+
+		@Autowired
+		TokenAuthenticationFilter tokenFilter;
 
 		@Bean
 		public PasswordAuthenticationProvider passwordProvider() {
@@ -28,10 +33,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				return new OtpAuthenticationProvider();
 		}
 
+		@Bean
+		public TokenAuthenticationProvider tokenAuthenticationProvider() {
+				return new TokenAuthenticationProvider();
+		}
+
 		@Override
 		protected void configure(AuthenticationManagerBuilder auth) {
 				auth.authenticationProvider(passwordProvider())
-								.authenticationProvider(otpProvider());
+								.authenticationProvider(otpProvider())
+								.authenticationProvider(tokenAuthenticationProvider());
 		}
 
 		@Override
@@ -43,8 +54,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		@Override
 		protected void configure(HttpSecurity http) throws Exception {
 				http.csrf().disable()
-								.addFilterAt(filter, BasicAuthenticationFilter.class);
+								.addFilterAt(loginFilter, BasicAuthenticationFilter.class)
+								.addFilterAfter(tokenFilter, BasicAuthenticationFilter.class);
 		}
-
-
 }

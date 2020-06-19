@@ -1,4 +1,4 @@
-package com.fatihyurdagul.multipleauthentication;
+package com.fatihyurdagul.multipleauthentication.store;
 
 import org.springframework.stereotype.Component;
 

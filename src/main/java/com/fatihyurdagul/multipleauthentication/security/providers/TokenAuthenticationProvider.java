@@ -1,7 +1,7 @@
 package com.fatihyurdagul.multipleauthentication.security.providers;
 
-import com.fatihyurdagul.multipleauthentication.store.OtpStore;
-import com.fatihyurdagul.multipleauthentication.security.token.OtpToken;
+import com.fatihyurdagul.multipleauthentication.security.token.CustomToken;
+import com.fatihyurdagul.multipleauthentication.store.CustomTokenStore;
 import com.sun.tools.javac.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -9,27 +9,22 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 
-public class OtpAuthenticationProvider implements AuthenticationProvider {
-
+public class TokenAuthenticationProvider implements AuthenticationProvider {
 		@Autowired
-		OtpStore store;
+		CustomTokenStore tokenStore;
 
 		@Override
 		public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+				String token = authentication.getName();
 
-				String username = authentication.getName(); // principal
-				String otp = (String) authentication.getCredentials();
-
-				if (store.isValidOtp(username, otp)) {
-						return new OtpToken(username, null, List.of(() -> "read"));
+				if (tokenStore.isExistToken(token)) {
+						return new CustomToken(token, null, List.of(() -> "read"));
 				}
-
-				throw new BadCredentialsException("otp is not valid");
-
+				throw new BadCredentialsException("Token is not valid");
 		}
 
 		@Override
 		public boolean supports(Class<?> aClass) {
-				return OtpToken.class.equals(aClass);
+				return CustomToken.class.equals(aClass);
 		}
 }

@@ -1,9 +1,11 @@
 package com.fatihyurdagul.multipleauthentication.security.filter;
 
-import com.fatihyurdagul.multipleauthentication.OtpStore;
+import com.fatihyurdagul.multipleauthentication.store.CustomTokenStore;
+import com.fatihyurdagul.multipleauthentication.store.OtpStore;
 import com.fatihyurdagul.multipleauthentication.security.token.OtpToken;
 import com.fatihyurdagul.multipleauthentication.security.token.PasswordToken;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -20,11 +22,18 @@ import java.util.UUID;
 @Component
 public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
-		@Autowired
 		AuthenticationManager manager;
 
 		@Autowired
 		OtpStore store;
+
+		@Autowired
+		CustomTokenStore tokenStore;
+
+		@Autowired
+		public CustomAuthenticationFilter(@Lazy  AuthenticationManager manager) {
+				this.manager = manager;
+		}
 
 		@Override
 		protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
@@ -62,8 +71,10 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
 						token = new OtpToken(username, otp);
 						Authentication authenticated = manager.authenticate(token);
+						String accessToken = UUID.randomUUID().toString();
 
-						httpServletResponse.setHeader("token", UUID.randomUUID().toString());
+						tokenStore.addToken(accessToken);
+						httpServletResponse.setHeader("token", accessToken);
 
 				}
 		}
