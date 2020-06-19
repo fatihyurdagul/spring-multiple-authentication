@@ -7,6 +7,7 @@ import com.fatihyurdagul.multipleauthentication.security.token.PasswordToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -57,24 +58,35 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 						token = new PasswordToken(username, password);
 						Authentication authenticated = manager.authenticate(token);
 
-						// burada normalde kullanici icin one time password generate edip
-						// herhangi bir yerde sakladiktan sonra kullaniciya mail veya sms ile
-						// tek kullanimlik sifresi iletilmeli.
-						String otpCode = String.valueOf(new Random().nextInt(9999) + 1000);
+						if(authenticated.isAuthenticated()){
+								// burada normalde kullanici icin one time password generate edip
+								// herhangi bir yerde sakladiktan sonra kullaniciya mail veya sms ile
+								// tek kullanimlik sifresi iletilmeli.
+								String otpCode = String.valueOf(new Random().nextInt(9999) + 1000);
 
-						store.addUsernameOtp(username, otpCode);
-						// otp code'a bakip giris yapmayi deneyecegiz.
-						System.out.println(otpCode);
+								store.addUsernameOtp(username, otpCode);
+								// otp code'a bakip giris yapmayi deneyecegiz.
+								System.out.println(otpCode);
+						}else{
+								throw new BadCredentialsException("User info is not correct");
+						}
+
 
 				} else { // "otp"
 						String otp = credentials[1];
 
 						token = new OtpToken(username, otp);
 						Authentication authenticated = manager.authenticate(token);
-						String accessToken = UUID.randomUUID().toString();
 
-						tokenStore.addToken(accessToken);
-						httpServletResponse.setHeader("token", accessToken);
+						if(authenticated.isAuthenticated()){
+								String accessToken = UUID.randomUUID().toString();
+
+								tokenStore.addToken(accessToken);
+								httpServletResponse.setHeader("token", accessToken);
+						}else{
+								throw new BadCredentialsException("OTP is not correct");
+						}
+
 
 				}
 		}
