@@ -22,78 +22,83 @@ import java.util.UUID;
 
 @Component
 public class CustomAuthenticationFilter extends OncePerRequestFilter {
-
-		AuthenticationManager manager;
-
-		@Autowired
-		OtpStore store;
-
-		@Autowired
-		CustomTokenStore tokenStore;
-
-		@Autowired
-		public CustomAuthenticationFilter(@Lazy AuthenticationManager manager) {
-				this.manager = manager;
-		}
-
-		@Override
-		protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
-				String authorization = httpServletRequest.getHeader("Authorization");
-
-				if (authorization == null || authorization.length() <= 0) {
-						filterChain.doFilter(httpServletRequest, httpServletResponse);
-						return;
-				}
-				String[] authorizationArray = authorization.split(" ");
-				if (authorizationArray.length <= 0) return;
-				String prefix = authorizationArray[0];
-
-				String[] credentials = authorizationArray[1].split(":");
-				String username = credentials[0];
-
-				Authentication token;
-				if (prefix.equals("password")) {
-						String password = credentials[1];
-
-						token = new PasswordToken(username, password);
-						Authentication authenticated = manager.authenticate(token);
-
-						if (authenticated.isAuthenticated()) {
-								// burada normalde kullanici icin one time password generate edip
-								// herhangi bir yerde sakladiktan sonra kullaniciya mail veya sms ile
-								// tek kullanimlik sifresi iletilmeli.
-								String otpCode = String.valueOf(new Random().nextInt(9999) + 1000);
-
-								store.addUsernameOtp(username, otpCode);
-								// otp code'a bakip giris yapmayi deneyecegiz.
-								System.out.println(otpCode);
-								httpServletResponse.setHeader("otp_code", otpCode);
-						} else {
-								throw new BadCredentialsException("User info is not correct");
-						}
-
-
-				} else { // "otp"
-						String otp = credentials[1];
-
-						token = new OtpToken(username, otp);
-						Authentication authenticated = manager.authenticate(token);
-
-						if (authenticated.isAuthenticated()) {
-								String accessToken = UUID.randomUUID().toString();
-
-								tokenStore.addToken(accessToken);
-								httpServletResponse.setHeader("token", accessToken);
-						} else {
-								throw new BadCredentialsException("OTP is not correct");
-						}
-
-
-				}
-		}
-
-		@Override
-		protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-				return !request.getServletPath().equals("/login");
-		}
+  
+  AuthenticationManager manager;
+  
+  // 4 haneli tek kullanımlık OTP şifresini sakladığımız class
+  @Autowired
+  OtpStore store;
+  
+  @Autowired
+  CustomTokenStore tokenStore;
+  
+  // Authentication Manager sınıfı diğer sınıflarda da çağrıldığı için CircularDependency hatası alıyor.
+  // Lazy anotasyonu ile bu problemi çözüyoruz
+  @Autowired
+  public CustomAuthenticationFilter(@Lazy AuthenticationManager manager) {
+    this.manager = manager;
+  }
+  
+  @Override
+  protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
+    String authorization = httpServletRequest.getHeader("Authorization");
+    
+    if (authorization == null || authorization.length() <= 0) {
+      filterChain.doFilter(httpServletRequest, httpServletResponse);
+      return;
+    }
+    String[] authorizationArray = authorization.split(" ");
+    if (authorizationArray.length <= 0) return;
+    String prefix = authorizationArray[0];
+    
+    String[] credentials = authorizationArray[1].split(":");
+    String username = credentials[0];
+    
+    Authentication token;
+    if (prefix.equals("password")) {
+      String password = credentials[1];
+      
+      token = new PasswordToken(username, password);
+      Authentication authenticated = manager.authenticate(token);
+      
+      if (authenticated.isAuthenticated()) {
+        // burada normalde kullanici icin one time password generate edip
+        // herhangi bir yerde sakladiktan sonra kullaniciya mail veya sms ile
+        // tek kullanimlik sifresi iletilmeli.
+        String otpCode = String.valueOf(new Random().nextInt(9999) + 1000);
+        
+        store.addUsernameOtp(username, otpCode);
+        // otp code'a bakip giris yapmayi deneyecegiz.
+        System.out.println(otpCode);
+        httpServletResponse.setHeader("otp_code", otpCode);
+      } else {
+        throw new BadCredentialsException("User info is not correct");
+      }
+      
+      
+    } else { // "otp"
+      String otp = credentials[1];
+      
+      token = new OtpToken(username, otp);
+      Authentication authenticated = manager.authenticate(token);
+      
+      if (authenticated.isAuthenticated()) {
+        String accessToken = UUID.randomUUID().toString();
+        // tokenı uygulamada TokenStore adındaki sınıfa kaydediyoruz.
+        // Giriş işleminden sonra gelen isteklerde tokeni buradan kontrol edeceğiz.
+        tokenStore.addToken(accessToken);
+        httpServletResponse.setHeader("token", accessToken);
+      } else {
+        throw new BadCredentialsException("OTP is not correct");
+      }
+      
+      
+    }
+  }
+  
+  // URL'in sadece login olduğu durumlarda çalış.
+  @Override
+  protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    return !request.getServletPath().equals("/login");
+  }
 }

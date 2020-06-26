@@ -20,35 +20,35 @@ import java.io.IOException;
 
 @Component
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
-
-		AuthenticationManager manager;
-
-		@Autowired
-		public TokenAuthenticationFilter(@Lazy AuthenticationManager manager) {
-				this.manager = manager;
-		}
-
-		@Override
-		protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
-				String token = httpServletRequest.getHeader("Authorization");
-				if (token == null || token.length() <= 0) {
-						filterChain.doFilter(httpServletRequest, httpServletResponse);
-						return;
-				}
-				Authentication authToken = new CustomToken(token, null);
-
-				Authentication authenticate = manager.authenticate(authToken);
-
-				if (authenticate.isAuthenticated()) {
-						SecurityContextHolder.getContext().setAuthentication(authenticate);
-						filterChain.doFilter(httpServletRequest, httpServletResponse);
-				} else {
-						throw new BadCredentialsException("Token is not correct");
-				}
-		}
-
-		@Override
-		protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-				return request.getServletPath().equals("/login");
-		}
+  
+  AuthenticationManager manager;
+  
+  @Autowired
+  public TokenAuthenticationFilter(@Lazy AuthenticationManager manager) {
+    this.manager = manager;
+  }
+  
+  @Override
+  protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
+    String token = httpServletRequest.getHeader("Authorization");
+    if (token == null || token.length() <= 0) {
+      filterChain.doFilter(httpServletRequest, httpServletResponse);
+      return;
+    }
+    Authentication authToken = new CustomToken(token, null);
+    
+    Authentication authenticate = manager.authenticate(authToken);
+    
+    if (authenticate.isAuthenticated()) {
+      SecurityContextHolder.getContext().setAuthentication(authenticate);
+      filterChain.doFilter(httpServletRequest, httpServletResponse);
+    } else {
+      throw new BadCredentialsException("Token is not correct");
+    }
+  }
+  
+  @Override
+  protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    return request.getServletPath().equals("/login");
+  }
 }

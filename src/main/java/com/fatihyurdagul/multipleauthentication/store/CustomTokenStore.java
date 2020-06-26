@@ -7,13 +7,13 @@ import java.util.List;
 
 @Component
 public class CustomTokenStore {
-		List<String> tokenStore = new ArrayList();
-
-		public void addToken(String token){
-				tokenStore.add(token);
-		}
-
-		public boolean isExistToken(String token){
-				return tokenStore.contains(token);
-		}
+  List<String> tokenStore = new ArrayList();
+  
+  public void addToken(String token) {
+    tokenStore.add(token);
+  }
+  
+  public boolean isExistToken(String token) {
+    return tokenStore.contains(token);
+  }
 }
